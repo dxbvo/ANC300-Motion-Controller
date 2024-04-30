@@ -6,8 +6,8 @@ import time
 from tqdm import tqdm
 
 # Parameters
-xRange = 50 # in steps
-yRange = 50 # has to be even integer in order to return to starting position
+xRange = 70 # in steps
+yRange = 70 # has to be even integer in order to return to starting position
 voltages = np.zeros([yRange, xRange])
 V = 44 # 44V -> 1um
 f = 1000
@@ -30,10 +30,14 @@ for y in tqdm(range(yRange), desc="Progress", unit="row"):
 
     for x in range(xRange):
         anc300.move_by(1, direction)
-        time.sleep(0.05)
+        anc300.wait_move(1, timeout=1.)
+        # time.sleep(0.05)
         voltages[y, x] = task.read()
-    
+        while task.is_task_done() == 0:
+            pass
+            
     anc300.move_by(2, 1)
+    anc300.wait_move(2, timeout=1.)
 
 # Execution time
 endTime = time.time()
@@ -42,6 +46,7 @@ print("Execution time:", round(excTime, 2), "seconds")
 
 # Move back to starting position
 anc300.move_by(2, -yRange)
+anc300.wait_move(2, timeout=1.)
 
 # Close devices
 anc300.close()
@@ -52,7 +57,8 @@ voltages[1::2] = voltages[1::2, ::-1]
 
 plt.figure(1)
 plt.imshow(voltages, cmap = 'gray', origin = 'lower')
-plt.title(f'Voltage map \n (Execution time: {round(excTime, 2)}s, {V}V, {f}Hz)')
+plt.title(f'Voltage map \n (Execution time: {round(excTime/60, 2)} min, {V}V, {f}Hz)')
+plt.colorbar()
 plt.xlabel('x')
 plt.ylabel('y')
 plt.show()
